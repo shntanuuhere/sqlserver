@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Information System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .modal-overlay { transition: opacity 0.2s ease-in-out; }
+        .sortable { cursor: pointer; user-select: none; }
+        .sortable:hover { background-color: #f0f4f8; }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+
+    <div class="container mx-auto p-6 max-w-7xl">
+        <h1 class="text-3xl font-bold text-center mb-6 text-gray-800">Student Information System</h1>
+
+        <!-- Insert Form -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-2xl font-semibold mb-4">Add a New Student</h2>
+            <form id="insert-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <input type="number" id="student-id" placeholder="Student ID" required class="w-full p-2 border border-gray-300 rounded-md">
+                <input type="text" id="first-name" placeholder="First Name" required class="w-full p-2 border border-gray-300 rounded-md">
+                <input type="text" id="last-name" placeholder="Last Name" required class="w-full p-2 border border-gray-300 rounded-md">
+                <input type="text" id="major" placeholder="Major" class="w-full p-2 border border-gray-300 rounded-md">
+                <input type="text" id="school" placeholder="School" class="w-full p-2 border border-gray-300 rounded-md">
+                <input type="text" id="grade" placeholder="Grade/Percentage" class="w-full p-2 border border-gray-300 rounded-md">
+                <input type="text" id="board" placeholder="Board (e.g., CBSE)" class="w-full p-2 border border-gray-300 rounded-md">
+                <input type="number" id="passing-year" placeholder="Passing Year" class="w-full p-2 border border-gray-300 rounded-md" min="1900" max="2100">
+                <button type="submit" class="md:col-span-4 w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition">
+                    Insert Record
+                </button>
+            </form>
+            <p id="insert-status" class="mt-3 text-center font-medium"></p>
+        </div>
+
+        <!-- Data Table Section -->
+        <div class="bg-white p-6 rounded-lg shadow-md overflow-x-auto">
+            <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                <h2 class="text-2xl font-semibold">Student Data</h2>
+                <div class="flex items-center gap-4 w-full md:w-auto">
+                    <input type="text" id="search-bar" placeholder="Search students..." class="w-full md:w-64 p-2 border border-gray-300 rounded-md">
+                    <button id="fetch-btn" class="bg-gray-700 text-white font-semibold py-2 px-4 rounded-md hover:bg-gray-800 transition whitespace-nowrap">
+                        Refresh Data
+                    </button>
+                </div>
+            </div>
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase sortable" data-sort="StudentID">ID</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase sortable" data-sort="FirstName">First Name</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase sortable" data-sort="LastName">Last Name</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase sortable" data-sort="Major">Major</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase sortable" data-sort="School">School</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase sortable" data-sort="Grade">Grade</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase sortable" data-sort="Board">Board</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase sortable" data-sort="PassingYear">Passing Year</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="data-table-body" class="bg-white divide-y divide-gray-200">
+                    <!-- Data will be loaded here by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Edit Student Modal -->
+    <div id="edit-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center modal-overlay z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-lg">
+            <h2 class="text-2xl font-semibold mb-4">Edit Student Information</h2>
+            <form id="edit-form" class="space-y-4">
+                <input type="hidden" id="original-student-id">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Student ID</label>
+                        <input type="number" id="edit-student-id" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">First Name</label>
+                        <input type="text" id="edit-first-name" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Last Name</label>
+                        <input type="text" id="edit-last-name" required class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                    </div>
+                     <div>
+                        <label class="block text-sm font-medium text-gray-700">Major</label>
+                        <input type="text" id="edit-major" class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">School</label>
+                        <input type="text" id="edit-school" class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                    </div>
+                     <div>
+                        <label class="block text-sm font-medium text-gray-700">Grade/Percentage</label>
+                        <input type="text" id="edit-grade" class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                    </div>
+                     <div>
+                        <label class="block text-sm font-medium text-gray-700">Board</label>
+                        <input type="text" id="edit-board" class="mt-1 w-full p-2 border border-gray-300 rounded-md">
+                    </div>
+                     <div>
+                        <label class="block text-sm font-medium text-gray-700">Passing Year</label>
+                        <input type="number" id="edit-passing-year" class="mt-1 w-full p-2 border border-gray-300 rounded-md" min="1900" max="2100">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" id="cancel-edit-btn" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-md hover:bg-gray-300 transition">Cancel</button>
+                    <button type="submit" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-green-700 transition">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        const BASE_URL = 'https://sqlserver-jc4h.onrender.com';
+
+        // --- State Management ---
+        let allStudents = []; 
+        let sortColumn = 'StudentID'; 
+        let sortDirection = 'asc';
+
+        // --- DOM Elements ---
+        const insertForm = document.getElementById('insert-form');
+        const fetchBtn = document.getElementById('fetch-btn');
+        const dataTableBody = document.getElementById('data-table-body');
+        const insertStatus = document.getElementById('insert-status');
+        const editModal = document.getElementById('edit-modal');
+        const editForm = document.getElementById('edit-form');
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+        const searchBar = document.getElementById('search-bar');
+        const tableHeader = document.querySelector('thead');
+
+        // --- Helper function ---
+        const cleanValue = (val) => val === null || val === undefined ? '' : val;
+
+        // --- Core Rendering Logic ---
+        function renderTable() {
+            const searchTerm = searchBar.value.toLowerCase();
+            const filteredStudents = allStudents.filter(student => {
+                return Object.values(student).some(val => 
+                    String(cleanValue(val)).toLowerCase().includes(searchTerm)
+                );
+            });
+
+            filteredStudents.sort((a, b) => {
+                const valA = cleanValue(a[sortColumn]);
+                const valB = cleanValue(b[sortColumn]);
+                let comparison = 0;
+                if (valA > valB) comparison = 1;
+                else if (valA < valB) comparison = -1;
+                return sortDirection === 'asc' ? comparison : comparison * -1;
+            });
+
+            if (filteredStudents.length === 0) {
+                 dataTableBody.innerHTML = `<tr><td colspan="9" class="text-center p-4">No matching students found.</td></tr>`;
+            } else {
+                dataTableBody.innerHTML = filteredStudents.map(s => `
+                    <tr data-student='${JSON.stringify(s)}'>
+                        <td class="px-4 py-4 whitespace-nowrap">${cleanValue(s.StudentID)}</td>
+                        <td class="px-4 py-4 whitespace-nowrap">${cleanValue(s.FirstName)}</td>
+                        <td class="px-4 py-4 whitespace-nowrap">${cleanValue(s.LastName)}</td>
+                        <td class="px-4 py-4 whitespace-nowrap">${cleanValue(s.Major)}</td>
+                        <td class="px-4 py-4 whitespace-nowrap">${cleanValue(s.School)}</td>
+                        <td class="px-4 py-4 whitespace-nowrap">${cleanValue(s.Grade)}</td>
+                        <td class="px-4 py-4 whitespace-nowrap">${cleanValue(s.Board)}</td>
+                        <td class="px-4 py-4 whitespace-nowrap">${cleanValue(s.PassingYear)}</td>
+                        <td class="px-4 py-4 space-x-2 whitespace-nowrap">
+                            <button class="edit-btn text-blue-600 hover:text-blue-800 font-medium">Edit</button>
+                            <button class="delete-btn text-red-600 hover:text-red-800 font-medium">Delete</button>
+                        </td>
+                    </tr>
+                `).join('');
+            }
+            
+            document.querySelectorAll('th.sortable').forEach(th => {
+                th.innerHTML = th.innerHTML.replace(/ [▲▼]/, '');
+                if (th.dataset.sort === sortColumn) {
+                    th.innerHTML += sortDirection === 'asc' ? ' ▲' : ' ▼';
+                }
+            });
+        }
+
+        // --- Data Fetching and API Interaction ---
+        async function fetchData() {
+            dataTableBody.innerHTML = '<tr><td colspan="9" class="text-center p-4">Loading...</td></tr>';
+            try {
+                const response = await fetch(`${BASE_URL}/api/students`);
+                const data = await response.json();
+                if (data.error) throw new Error(data.error);
+                allStudents = data;
+                renderTable();
+            } catch (error) {
+                dataTableBody.innerHTML = `<tr><td colspan="9" class="text-center p-4 text-red-500">Error: ${error.message}. Is the backend running?</td></tr>`;
+            }
+        }
+
+        async function handleInsert(event) {
+            event.preventDefault();
+            const student = {
+                StudentID: document.getElementById('student-id').value,
+                FirstName: document.getElementById('first-name').value,
+                LastName: document.getElementById('last-name').value,
+                Major: document.getElementById('major').value,
+                School: document.getElementById('school').value,
+                Grade: document.getElementById('grade').value,
+                Board: document.getElementById('board').value,
+                PassingYear: document.getElementById('passing-year').value,
+            };
+
+            const response = await fetch(`${BASE_URL}/api/students`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(student),
+            });
+            const result = await response.json();
+
+            insertStatus.textContent = result.message;
+            insertStatus.className = response.ok ? 'mt-3 text-center font-medium text-green-600' : 'mt-3 text-center font-medium text-red-600';
+            if (response.ok) {
+                insertForm.reset();
+                fetchData();
+            }
+        }
+        
+        async function deleteStudent(studentId) {
+            const response = await fetch(`${BASE_URL}/api/students/${studentId}`, { method: 'DELETE' });
+            const result = await response.json();
+            alert(result.message);
+            if (response.ok) fetchData();
+        }
+
+        async function handleUpdate(event) {
+            event.preventDefault();
+            const originalId = document.getElementById('original-student-id').value;
+            const updatedData = {
+                StudentID: document.getElementById('edit-student-id').value,
+                FirstName: document.getElementById('edit-first-name').value,
+                LastName: document.getElementById('edit-last-name').value,
+                Major: document.getElementById('edit-major').value,
+                School: document.getElementById('edit-school').value,
+                Grade: document.getElementById('edit-grade').value,
+                Board: document.getElementById('edit-board').value,
+                PassingYear: document.getElementById('edit-passing-year').value
+            };
+
+            const response = await fetch(`${BASE_URL}/api/students/${originalId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedData),
+            });
+            const result = await response.json();
+            alert(result.message);
+
+            if (response.ok) {
+                editModal.classList.add('hidden');
+                editModal.classList.remove('flex');
+                fetchData();
+            }
+        }
+        
+        // --- Event Handlers for UI ---
+        function handleTableClick(event) {
+            const target = event.target;
+            const row = target.closest('tr');
+            if (!row || !row.dataset.student) return;
+            
+            const studentData = JSON.parse(row.dataset.student);
+            const studentId = studentData.StudentID;
+
+            if (target.classList.contains('delete-btn')) {
+                if (confirm(`Are you sure you want to delete student ${cleanValue(studentData.FirstName)} (ID: ${studentId})?`)) {
+                    deleteStudent(studentId);
+                }
+            } else if (target.classList.contains('edit-btn')) {
+                document.getElementById('original-student-id').value = studentId;
+                document.getElementById('edit-student-id').value = cleanValue(studentData.StudentID);
+                document.getElementById('edit-first-name').value = cleanValue(studentData.FirstName);
+                document.getElementById('edit-last-name').value = cleanValue(studentData.LastName);
+                document.getElementById('edit-major').value = cleanValue(studentData.Major);
+                document.getElementById('edit-school').value = cleanValue(studentData.School);
+                document.getElementById('edit-grade').value = cleanValue(studentData.Grade);
+                document.getElementById('edit-board').value = cleanValue(studentData.Board);
+                document.getElementById('edit-passing-year').value = cleanValue(studentData.PassingYear);
+                editModal.classList.remove('hidden');
+                editModal.classList.add('flex');
+            }
+        }
+        
+        function handleSort(event) {
+            const newSortColumn = event.target.dataset.sort;
+            if (!newSortColumn) return;
+
+            if (sortColumn === newSortColumn) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortColumn = newSortColumn;
+                sortDirection = 'asc';
+            }
+            renderTable();
+        }
+
+        // --- Event Listeners ---
+        fetchBtn.addEventListener('click', fetchData);
+        insertForm.addEventListener('submit', handleInsert);
+        dataTableBody.addEventListener('click', handleTableClick);
+        editForm.addEventListener('submit', handleUpdate);
+        cancelEditBtn.addEventListener('click', () => {
+            editModal.classList.add('hidden');
+            editModal.classList.remove('flex');
+        });
+        searchBar.addEventListener('input', renderTable);
+        tableHeader.addEventListener('click', handleSort);
+
+        // Fetch initial data when the page loads
+        document.addEventListener('DOMContentLoaded', fetchData);
+    </script>
+</body>
+</html>
