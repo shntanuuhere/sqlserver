@@ -1,0 +1,54 @@
+# Step 1: Start from an official Python base image (Debian "Bullseye")
+FROM python:3.11-slim-bullseye
+
+# Step 2: Set the working directory inside the container
+WORKDIR /app
+
+# Step 3: Install system dependencies needed for the Microsoft ODBC Driver
+# This runs as the root user, so it has the correct permissions
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    curl \
+    gnupg \
+    unixodbc-dev && \
+    # Add Microsoft's official repository
+    curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
+    curl https://packages.microsoft.com/config/debian/11/prod.list > /etc/apt/sources.list.d/mssql-release.list && \
+    # Update package lists and install the driver
+    apt-get update && \
+    ACCEPT_EULA=Y apt-get install -y msodbcsql17 && \
+    # Clean up to keep the image size small
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Step 4: Copy your requirements file and install Python packages
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Step 5: Copy the rest of your application code
+COPY . .
+
+# Step 6: Expose the port Render will use
+EXPOSE 10000
+
+# The Start Command in your Render settings will override this, but it's good practice
+CMD ["gunicorn", "backend:app"]
+```
+
+#### Step 3: Change Your Service Type in Render
+
+Now, go to your service's dashboard on Render.
+1.  Go to the **Settings** tab.
+2.  Under "Environment," change the setting from "Python" to **"Docker"**.
+3.  **Delete** the command from the **Build Command** field. It should be empty. Render will automatically use your `Dockerfile`.
+4.  Ensure your **Start Command** is still `gunicorn backend:app`.
+
+
+
+#### Step 4: Commit and Push
+
+Save your new `Dockerfile`, commit it, and push it to GitHub.
+```bash
+git add Dockerfile
+git commit -m "feat: Add Dockerfile for custom environment"
+git push
